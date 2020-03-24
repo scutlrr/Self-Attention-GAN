@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from spectral import SpectralNorm
 import numpy as np
-
+import torch.nn.utils.spectral_norm as sn
 
 class Self_Attn(nn.Module):
     """ Self attention Layer"""
@@ -16,6 +16,7 @@ class Self_Attn(nn.Module):
         self.query_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
         self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
         self.value_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim , kernel_size= 1)
+        # add gamma to be module which is a learnable parameter
         self.gamma = nn.Parameter(torch.zeros(1))
         self.softmax = nn.Softmax(dim=-1)
 
@@ -44,7 +45,7 @@ class Self_Attn(nn.Module):
 class Generator(nn.Module):
     """Generator."""
 
-    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64):
+    def __init__(self, batch_size, image_size=64, z_dim=128, conv_dim=64):
         super(Generator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -54,6 +55,7 @@ class Generator(nn.Module):
 
         repeat_num = int(np.log2(self.imsize)) - 3
         mult = 2 ** repeat_num  # 8
+        # layer1.append(sn(nn.ConvTranspose2d(z_dim, conv_dim * mult, 4)))
         layer1.append(SpectralNorm(nn.ConvTranspose2d(z_dim, conv_dim * mult, 4)))
         layer1.append(nn.BatchNorm2d(conv_dim * mult))
         layer1.append(nn.ReLU())
@@ -91,13 +93,20 @@ class Generator(nn.Module):
         self.attn2 = Self_Attn( 64,  'relu')
 
     def forward(self, z):
+        #  z(64, 128, 1, 1)
         z = z.view(z.size(0), z.size(1), 1, 1)
-        out=self.l1(z)
-        out=self.l2(out)
-        out=self.l3(out)
-        out,p1 = self.attn1(out)
-        out=self.l4(out)
-        out,p2 = self.attn2(out)
+        # out(64, 512, 4, 4)
+        out = self.l1(z)
+        # out(64, 256, 8, 8)
+        out = self.l2(out)
+        # out(64, 128, 16, 16)
+        out = self.l3(out)
+        out, p1 = self.attn1(out)
+        #  if self.imsize == 64
+        out = self.l4(out)
+        out, p2 = self.attn2(out)
+
+        # out(64, 3, 32, 32)
         out=self.last(out)
 
         return out, p1, p2

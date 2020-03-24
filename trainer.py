@@ -24,7 +24,7 @@ class Trainer(object):
 
         # Model hyper-parameters
         self.imsize = config.imsize
-        self.g_num = config.g_num
+        self.g_num = config.g_num  #5
         self.z_dim = config.z_dim
         self.g_conv_dim = config.g_conv_dim
         self.d_conv_dim = config.d_conv_dim
@@ -90,8 +90,8 @@ class Trainer(object):
         for step in range(start, self.total_step):
 
             # ================== Train D ================== #
-            self.D.train()
-            self.G.train()
+            self.D.train(True)
+            self.G.train(True)
 
             try:
                 real_images, _ = next(data_iter)
@@ -110,8 +110,8 @@ class Trainer(object):
 
             # apply Gumbel Softmax
             z = tensor2var(torch.randn(real_images.size(0), self.z_dim))
-            fake_images,gf1,gf2 = self.G(z)
-            d_out_fake,df1,df2 = self.D(fake_images)
+            fake_images, gf1, gf2 = self.G(z)
+            d_out_fake, df1, df2 = self.D(fake_images)
 
             if self.adv_loss == 'wgan-gp':
                 d_loss_fake = d_out_fake.mean()
@@ -174,8 +174,8 @@ class Trainer(object):
                 print("Elapsed [{}], G_step [{}/{}], D_step[{}/{}], d_out_real: {:.4f}, "
                       " ave_gamma_l3: {:.4f}, ave_gamma_l4: {:.4f}".
                       format(elapsed, step + 1, self.total_step, (step + 1),
-                             self.total_step , d_loss_real.data[0],
-                             self.G.attn1.gamma.mean().data[0], self.G.attn2.gamma.mean().data[0] ))
+                             self.total_step, d_loss_real.data[0],
+                             self.G.attn1.gamma.mean().data[0], self.G.attn2.gamma.mean().data[0]))
 
             # Sample images
             if (step + 1) % self.sample_step == 0:
@@ -184,7 +184,7 @@ class Trainer(object):
                            os.path.join(self.sample_path, '{}_fake.png'.format(step + 1)))
 
             # Save model
-            if (step+1) % model_save_step==0:
+            if (step+1) % model_save_step == 0:
                 torch.save(self.G.state_dict(),
                            os.path.join(self.model_save_path, '{}_G.pth'.format(step + 1)))
                 torch.save(self.D.state_dict(),
@@ -226,3 +226,10 @@ class Trainer(object):
     def save_sample(self, data_iter):
         real_images, _ = next(data_iter)
         save_image(denorm(real_images), os.path.join(self.sample_path, 'real.png'))
+
+
+if __name__ == "__main__":
+    G = Generator(1, 64, 128, 64)
+    # print(G)
+    net = G(torch.randn(1, 128))
+    print(net[0].shape)
