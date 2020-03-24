@@ -231,5 +231,6 @@ class Trainer(object):
 if __name__ == "__main__":
     G = Generator(1, 64, 128, 64)
     # print(G)
+    # to generate image which size is equal to expect one
     net = G(torch.randn(1, 128))
     print(net[0].shape)
