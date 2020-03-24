@@ -5,10 +5,11 @@ from torch.autograd import Variable
 from spectral import SpectralNorm
 import numpy as np
 
+
 class Self_Attn(nn.Module):
     """ Self attention Layer"""
-    def __init__(self,in_dim,activation):
-        super(Self_Attn,self).__init__()
+    def __init__(self, in_dim, activation):
+        super(Self_Attn, self).__init__()
         self.chanel_in = in_dim
         self.activation = activation
         
@@ -16,9 +17,9 @@ class Self_Attn(nn.Module):
         self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
         self.value_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim , kernel_size= 1)
         self.gamma = nn.Parameter(torch.zeros(1))
+        self.softmax = nn.Softmax(dim=-1)
 
-        self.softmax  = nn.Softmax(dim=-1) #
-    def forward(self,x):
+    def forward(self, x):
         """
             inputs :
                 x : input feature maps( B X C X W X H)
@@ -26,18 +27,19 @@ class Self_Attn(nn.Module):
                 out : self attention value + input feature 
                 attention: B X N X N (N is Width*Height)
         """
-        m_batchsize,C,width ,height = x.size()
-        proj_query  = self.query_conv(x).view(m_batchsize,-1,width*height).permute(0,2,1) # B X CX(N)
-        proj_key =  self.key_conv(x).view(m_batchsize,-1,width*height) # B X C x (*W*H)
-        energy =  torch.bmm(proj_query,proj_key) # transpose check
-        attention = self.softmax(energy) # BX (N) X (N) 
-        proj_value = self.value_conv(x).view(m_batchsize,-1,width*height) # B X C X N
+        m_batchsize, c, width, height = x.size()
+        proj_query  = self.query_conv(x).view(m_batchsize, -1, width*height).permute(0, 2, 1)  # B X (N) X C
+        proj_key    = self.key_conv(x).view(m_batchsize, -1, width*height)  # B X C x (*W*H)
+        energy      = torch.bmm(proj_query, proj_key)  # transpose check
+        attention   = self.softmax(energy)  # B X (N) X (N)
+        proj_value  = self.value_conv(x).view(m_batchsize, -1, width*height)  # B X C X N
 
-        out = torch.bmm(proj_value,attention.permute(0,2,1) )
-        out = out.view(m_batchsize,C,width,height)
+        out = torch.bmm(proj_value, attention.permute(0, 2, 1))
+        out = out.view(m_batchsize, c, width, height)
         
         out = self.gamma*out + x
-        return out,attention
+        return out, attention
+
 
 class Generator(nn.Module):
     """Generator."""
@@ -51,7 +53,7 @@ class Generator(nn.Module):
         last = []
 
         repeat_num = int(np.log2(self.imsize)) - 3
-        mult = 2 ** repeat_num # 8
+        mult = 2 ** repeat_num  # 8
         layer1.append(SpectralNorm(nn.ConvTranspose2d(z_dim, conv_dim * mult, 4)))
         layer1.append(nn.BatchNorm2d(conv_dim * mult))
         layer1.append(nn.ReLU())

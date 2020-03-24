@@ -1,6 +1,7 @@
 import torch
 import torchvision.datasets as dsets
 from torchvision import transforms
+import torch.utils.data as data
 
 
 class Data_Loader():
@@ -42,10 +43,10 @@ class Data_Loader():
         elif self.dataset == 'celeb':
             dataset = self.load_celeb()
 
-        loader = torch.utils.data.DataLoader(dataset=dataset,
-                                              batch_size=self.batch,
-                                              shuffle=self.shuf,
-                                              num_workers=2,
-                                              drop_last=True)
+        loader = data.DataLoader(dataset=dataset,
+                                 batch_size=self.batch,
+                                 shuffle=self.shuf,
+                                 num_workers=2,
+                                 drop_last=True)
         return loader
 

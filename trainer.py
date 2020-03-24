@@ -11,6 +11,7 @@ from torchvision.utils import save_image
 from sagan_models import Generator, Discriminator
 from utils import *
 
+
 class Trainer(object):
     def __init__(self, data_loader, config):
 
@@ -182,6 +183,7 @@ class Trainer(object):
                 save_image(denorm(fake_images.data),
                            os.path.join(self.sample_path, '{}_fake.png'.format(step + 1)))
 
+            # Save model
             if (step+1) % model_save_step==0:
                 torch.save(self.G.state_dict(),
                            os.path.join(self.model_save_path, '{}_G.pth'.format(step + 1)))
@@ -206,9 +208,9 @@ class Trainer(object):
         print(self.G)
         print(self.D)
 
-    def build_tensorboard(self):
-        from logger import Logger
-        self.logger = Logger(self.log_path)
+    # def build_tensorboard(self):
+    #     from logger import Logger
+    #     self.logger = Logger(self.log_path)
 
     def load_pretrained_model(self):
         self.G.load_state_dict(torch.load(os.path.join(
