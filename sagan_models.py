@@ -146,6 +146,7 @@ class Discriminator(nn.Module):
         self.l2 = nn.Sequential(*layer2)
         self.l3 = nn.Sequential(*layer3)
 
+        # last.append(nn.AdaptiveAvgPool2d(1))
         last.append(nn.Conv2d(curr_dim, 1, 4))
         self.last = nn.Sequential(*last)
 
@@ -162,3 +163,4 @@ class Discriminator(nn.Module):
         out = self.last(out)
 
         return out.squeeze(), p1, p2
+        # out.squeeze() is a one-dimension vector of batch_size elements
